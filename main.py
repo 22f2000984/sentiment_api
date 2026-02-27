@@ -41,7 +41,8 @@ def analyze_sentiment(text: str) -> str:
         "incredible","outstanding","fabulous","marvelous",
         "fun","beautiful","cool","success","successful",
         "smile","joy","joyful","win","winning","improve",
-        "improved","improvement","well","better"
+        "improved","improvement","well","better",
+        "nice","fantastic","awesome","yay"
     }
 
     negative_words = {
@@ -52,21 +53,14 @@ def analyze_sentiment(text: str) -> str:
         "depressed","unhappy","pathetic","useless",
         "lame","dreadful","regret","complaint",
         "fail","failed","failure","ruined","mess",
-        "cry","pain","painful","worse","loss","lost"
+        "cry","pain","painful","worse","loss","lost",
+        "angry","mad","hurt","sucks","tragic"
     }
 
-    # Base scoring
     pos_score = sum(1 for w in words if w in positive_words)
     neg_score = sum(1 for w in words if w in negative_words)
 
-    # Strong emotional intensifiers
-    if any(w in text for w in ["very","extremely","really","absolutely","so","too"]):
-        if pos_score > 0:
-            pos_score += 1
-        if neg_score > 0:
-            neg_score += 1
-
-    # Negation handling
+    # Handle negation
     for i in range(len(words)-1):
         if words[i] == "not":
             if words[i+1] in positive_words:
@@ -74,16 +68,20 @@ def analyze_sentiment(text: str) -> str:
             elif words[i+1] in negative_words:
                 pos_score += 1
 
-    # Fallback heuristic: exclamation often positive unless negative word exists
-    if "!" in text and pos_score == 0 and neg_score == 0:
-        return "happy"
-
-    if pos_score > neg_score:
-        return "happy"
-    elif neg_score > pos_score:
-        return "sad"
-    else:
+    # Bias rule to reduce neutral cases
+    if pos_score == 0 and neg_score == 0:
+        # If sentence contains strong emotional punctuation
+        if "!" in text:
+            return "happy"
+        # Slight bias: longer emotional sentences lean negative
+        if any(w in text for w in ["never","no","nothing","nobody","none"]):
+            return "sad"
         return "neutral"
+
+    if pos_score >= neg_score:
+        return "happy"
+    else:
+        return "sad"
 @app.post("/", response_model=SentimentResponse)
 def sentiment_analysis(request: SentimentRequest):
     return {
