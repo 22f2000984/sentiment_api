@@ -26,10 +26,10 @@ class SentimentResponse(BaseModel):
 
 import re
 
+import re
+
 def analyze_sentiment(text: str) -> str:
     text = text.lower()
-
-    # Tokenize words
     words = re.findall(r"\b\w+\b", text)
 
     positive_words = {
@@ -39,7 +39,9 @@ def analyze_sentiment(text: str) -> str:
         "liked","like","enjoy","enjoyed","positive",
         "delight","delighted","pleased","glad","satisfied",
         "incredible","outstanding","fabulous","marvelous",
-        "fun","beautiful","cool","success","successful"
+        "fun","beautiful","cool","success","successful",
+        "smile","joy","joyful","win","winning","improve",
+        "improved","improvement","well","better"
     }
 
     negative_words = {
@@ -49,26 +51,32 @@ def analyze_sentiment(text: str) -> str:
         "problem","issue","dislike","frustrated",
         "depressed","unhappy","pathetic","useless",
         "lame","dreadful","regret","complaint",
-        "fail","failed","failure","ruined","mess"
+        "fail","failed","failure","ruined","mess",
+        "cry","pain","painful","worse","loss","lost"
     }
 
-    pos_score = 0
-    neg_score = 0
+    # Base scoring
+    pos_score = sum(1 for w in words if w in positive_words)
+    neg_score = sum(1 for w in words if w in negative_words)
 
-    for i, word in enumerate(words):
-        # Handle negation like "not good"
-        if word == "not" and i + 1 < len(words):
-            next_word = words[i + 1]
-            if next_word in positive_words:
-                neg_score += 1
-            elif next_word in negative_words:
-                pos_score += 1
-            continue
-
-        if word in positive_words:
+    # Strong emotional intensifiers
+    if any(w in text for w in ["very","extremely","really","absolutely","so","too"]):
+        if pos_score > 0:
             pos_score += 1
-        elif word in negative_words:
+        if neg_score > 0:
             neg_score += 1
+
+    # Negation handling
+    for i in range(len(words)-1):
+        if words[i] == "not":
+            if words[i+1] in positive_words:
+                neg_score += 1
+            elif words[i+1] in negative_words:
+                pos_score += 1
+
+    # Fallback heuristic: exclamation often positive unless negative word exists
+    if "!" in text and pos_score == 0 and neg_score == 0:
+        return "happy"
 
     if pos_score > neg_score:
         return "happy"
@@ -76,7 +84,6 @@ def analyze_sentiment(text: str) -> str:
         return "sad"
     else:
         return "neutral"
-
 @app.post("/", response_model=SentimentResponse)
 def sentiment_analysis(request: SentimentRequest):
     return {
