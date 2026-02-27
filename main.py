@@ -47,7 +47,7 @@ def analyze_sentiment(text: str) -> str:
         return "sad"
     return "neutral"
 
-@app.post("/sentiment", response_model=SentimentResponse)
+@app.post("/", response_model=SentimentResponse)
 def sentiment_analysis(request: SentimentRequest):
     return {
         "results": [
