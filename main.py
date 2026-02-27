@@ -24,29 +24,51 @@ class SentimentResult(BaseModel):
 class SentimentResponse(BaseModel):
     results: List[SentimentResult]
 
+import re
+
 def analyze_sentiment(text: str) -> str:
     text = text.lower()
 
-    positive_words = [
+    # Tokenize words
+    words = re.findall(r"\b\w+\b", text)
+
+    positive_words = {
         "love","great","excellent","happy","amazing","good",
         "fantastic","awesome","wonderful","brilliant",
         "best","excited","nice","super","perfect",
         "liked","like","enjoy","enjoyed","positive",
         "delight","delighted","pleased","glad","satisfied",
-        "incredible","outstanding","fabulous","marvelous"
-    ]
+        "incredible","outstanding","fabulous","marvelous",
+        "fun","beautiful","cool","success","successful"
+    }
 
-    negative_words = [
+    negative_words = {
         "terrible","bad","sad","hate","awful","worst",
         "horrible","disappointed","angry","upset",
         "poor","boring","annoying","negative",
         "problem","issue","dislike","frustrated",
         "depressed","unhappy","pathetic","useless",
-        "lame","dreadful","regret","complaint"
-    ]
+        "lame","dreadful","regret","complaint",
+        "fail","failed","failure","ruined","mess"
+    }
 
-    pos_score = sum(word in text for word in positive_words)
-    neg_score = sum(word in text for word in negative_words)
+    pos_score = 0
+    neg_score = 0
+
+    for i, word in enumerate(words):
+        # Handle negation like "not good"
+        if word == "not" and i + 1 < len(words):
+            next_word = words[i + 1]
+            if next_word in positive_words:
+                neg_score += 1
+            elif next_word in negative_words:
+                pos_score += 1
+            continue
+
+        if word in positive_words:
+            pos_score += 1
+        elif word in negative_words:
+            neg_score += 1
 
     if pos_score > neg_score:
         return "happy"
