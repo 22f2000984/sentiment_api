@@ -31,21 +31,29 @@ def analyze_sentiment(text: str) -> str:
         "love","great","excellent","happy","amazing","good",
         "fantastic","awesome","wonderful","brilliant",
         "best","excited","nice","super","perfect",
-        "liked","like","enjoy","enjoyed","positive"
+        "liked","like","enjoy","enjoyed","positive",
+        "delight","delighted","pleased","glad","satisfied",
+        "incredible","outstanding","fabulous","marvelous"
     ]
 
     negative_words = [
         "terrible","bad","sad","hate","awful","worst",
         "horrible","disappointed","angry","upset",
         "poor","boring","annoying","negative",
-        "problem","issue","dislike"
+        "problem","issue","dislike","frustrated",
+        "depressed","unhappy","pathetic","useless",
+        "lame","dreadful","regret","complaint"
     ]
 
-    if any(word in text for word in positive_words):
+    pos_score = sum(word in text for word in positive_words)
+    neg_score = sum(word in text for word in negative_words)
+
+    if pos_score > neg_score:
         return "happy"
-    if any(word in text for word in negative_words):
+    elif neg_score > pos_score:
         return "sad"
-    return "neutral"
+    else:
+        return "neutral"
 
 @app.post("/", response_model=SentimentResponse)
 def sentiment_analysis(request: SentimentRequest):
